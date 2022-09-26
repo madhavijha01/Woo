@@ -1,35 +1,25 @@
-woocmerce : woocommerce woocomerce woo ecom
-https://stackoverflow.com/questions/24575035/woocommerce-create-load-more-products-with-ajax/24598744
-https://techcresendo.com/woocommerce-fatal-error-actionscheduler-php-lines/
-https://clicknathan.com/web-design/woocommerce-actionscheduler-table-error/
-https://codecanyon.net/item/lumise-product-designer-woocommerce-wordpress/21222684
+<?php 
 
-Set product sale price programmatically in WooCommerce 3
-https://stackoverflow.com/questions/48763989/set-product-sale-price-programmatically-in-woocommerce-3
 
-https://www.businessbloomer.com/woocommerce-set-override-product-price-programmatically/ 
-https://stackoverflow.com/questions/62748334/how-can-we-display-the-edit-account-form-using-shortcode
-https://remicorson.com/customise-woocommerce-checkout-fields-based-on-products-in-cart/
-https://remicorson.com/how-to-customize-the-woocommerce-checkout-page/
-https://isotropic.co/reorder-woocommerce-account-tabs/
+// mini cart woocommerce_mini_cart
+function custom_mini_cart() { 
+    echo '<li> <a href="'.wc_get_cart_url() .'" class="dropdown-back" data-toggle="dropdown"> ';
+    echo '<i class="fa fa-shopping-cart" aria-hidden="true"></i>';
+    echo '<div class="basket-item-count" style="display: inline;">';
+        echo '<span class="cart-items-count count">';
+            echo WC()->cart->get_cart_contents_count();
+        echo '</span>';
+    echo '</div>';
+    echo '</a></li>';
+  
+        echo '<div class="widget_shopping_cart_content">';
+                  woocommerce_mini_cart();
+            echo '</div>';
 
-https://wordpress.org/plugins/checkout-for-paypal/ 
-https://wordpress.org/plugins/wordpress-easy-paypal-payment-or-donation-accept-plugin/
-https://wordpress.org/plugins/wp-paypal/
+      }
+add_shortcode( 'bio-mini-cart', 'custom_mini_cart' );
+?>
 
-Woo cart and checkout
-https://wordpress.org/plugins/woo-checkout-on-popup-free/
-https://wordpress.org/plugins/instantio/
-
-Sale Tax:
-https://wordpress.org/plugins/simple-sales-tax/
-
-https://rudrastyh.com/woocommerce/add-product-to-cart-programmatically.html
-https://rudrastyh.com/woocommerce/get-number-of-items-in-cart.html
-
-https://woocommerce.com/document/setting-up-taxes-in-woocommerce/
-https://woocommerce.com/document/woocommerce-shipping-and-tax/woocommerce-tax/ 
-https://rudrastyh.com/woocommerce
 
 <a href="<?php echo wc_get_cart_url() ?>">Cart</a>
 <a href="<?php echo wc_get_checkout_url() ?>">Checkout</a>
@@ -256,21 +246,38 @@ function bbloomer_alter_price_cart( $cart ) {
  
 }
 
-===================================================================
-// mini cart woocommerce_mini_cart
-function custom_mini_cart() { 
-    echo '<li> <a href="'.wc_get_cart_url() .'" class="dropdown-back" data-toggle="dropdown"> ';
-    echo '<i class="fa fa-shopping-cart" aria-hidden="true"></i>';
-    echo '<div class="basket-item-count" style="display: inline;">';
-        echo '<span class="cart-items-count count">';
-            echo WC()->cart->get_cart_contents_count();
-        echo '</span>';
-    echo '</div>';
-    echo '</a></li>';
-  
-        echo '<div class="widget_shopping_cart_content">';
-                  woocommerce_mini_cart();
-            echo '</div>';
+?>
 
-      }
-add_shortcode( 'bio-mini-cart', 'custom_mini_cart' );
+===================================================================
+woocmerce : woocommerce woocomerce woo E-com
+https://stackoverflow.com/questions/24575035/woocommerce-create-load-more-products-with-ajax/24598744
+https://techcresendo.com/woocommerce-fatal-error-actionscheduler-php-lines/
+https://clicknathan.com/web-design/woocommerce-actionscheduler-table-error/
+https://codecanyon.net/item/lumise-product-designer-woocommerce-wordpress/21222684
+
+Set product sale price programmatically in WooCommerce 3
+https://stackoverflow.com/questions/48763989/set-product-sale-price-programmatically-in-woocommerce-3
+
+https://www.businessbloomer.com/woocommerce-set-override-product-price-programmatically/ 
+https://stackoverflow.com/questions/62748334/how-can-we-display-the-edit-account-form-using-shortcode
+https://remicorson.com/customise-woocommerce-checkout-fields-based-on-products-in-cart/
+https://remicorson.com/how-to-customize-the-woocommerce-checkout-page/
+https://isotropic.co/reorder-woocommerce-account-tabs/
+
+https://wordpress.org/plugins/checkout-for-paypal/ 
+https://wordpress.org/plugins/wordpress-easy-paypal-payment-or-donation-accept-plugin/
+https://wordpress.org/plugins/wp-paypal/
+
+Woo cart and checkout
+https://wordpress.org/plugins/woo-checkout-on-popup-free/
+https://wordpress.org/plugins/instantio/
+
+Sale Tax:
+https://wordpress.org/plugins/simple-sales-tax/
+
+https://rudrastyh.com/woocommerce/add-product-to-cart-programmatically.html
+https://rudrastyh.com/woocommerce/get-number-of-items-in-cart.html
+
+https://woocommerce.com/document/setting-up-taxes-in-woocommerce/
+https://woocommerce.com/document/woocommerce-shipping-and-tax/woocommerce-tax/ 
+https://rudrastyh.com/woocommerce
