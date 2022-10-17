@@ -245,6 +245,80 @@ function bbloomer_alter_price_cart( $cart ) {
     }
  
 }
+//**** https://quadlayers.com/update-product-price-programmatically-in-woocommerce/ **** /////
+//  woocommerce dynamic pricing programmatically
+//   1) Update product price when a checkbox is selected
+//// 1.1 Add the checkbox input field to the products page
+
+add_action('woocommerce_after_add_to_cart_button', 'add_check_box_to_product_page', 30 );
+function add_check_box_to_product_page(){ ?>     
+       <div style="margin-top:20px">           
+<label for="extra_pack"> <?php _e( 'Extra packaging', 'quadlayers' ); ?>
+<input type="checkbox" name="extra_pack" value="extra_pack"> 
+</label>
+                    
+</div>
+     <?php
+}
+//// 1.2 Update the price when the user adds a product to the cart
+add_filter( 'woocommerce_add_cart_item_data', 'add_cart_item_data', 10, 3 );
+ 
+function add_cart_item_data( $cart_item_data, $product_id, $variation_id ) {
+     // get product id & price
+    $product = wc_get_product( $product_id );
+    $price = $product->get_price();
+    // extra pack checkbox
+    if( ! empty( $_POST['extra_pack'] ) ) {
+       
+        $cart_item_data['new_price'] = $price + 15;
+    }
+return $cart_item_data;
+}
+//// 1.3 Recalculate the total price of the cart
+add_action( 'woocommerce_before_calculate_totals', 'before_calculate_totals', 10, 1 );
+ 
+function before_calculate_totals( $cart_obj ) {
+if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
+return;
+}
+// Iterate through each cart item
+foreach( $cart_obj->get_cart() as $key=>$value ) {
+if( isset( $value['new_price'] ) ) {
+$price = $value['new_price'];
+$value['data']->set_price( ( $price ) );
+}
+}
+}
+
+// 2. Edit the product price based on user roles
+function add_cart_item_data( $cart_item_data, $product_id, $variation_id ) {
+    // get product id & price
+   $product = wc_get_product( $product_id );
+   $price = $product->get_price();
+   if(// Is logged in && is customer role
+       is_user_logged_in()==true&& wc_current_user_has_role( 'customer' )){
+       
+        $cart_item_data['new_price'] = $price * 0.8;
+   }
+return $cart_item_data;
+}
+add_filter( 'woocommerce_add_cart_item_data', 'add_cart_item_data', 10, 3 );
+
+// 3. Update product price based on product taxonomy
+add_filter( 'woocommerce_add_cart_item_data', 'add_cart_item_data', 10, 3 );
+ 
+function add_cart_item_data( $cart_item_data, $product_id, $variation_id ) {
+     // get product id & price
+    $product = wc_get_product( $product_id );
+    $price = $product->get_price();
+    $terms = get_the_terms( $product_id, 'product_cat' );
+    // Category match ! apply discount
+    if($terms[0]->name=='Posters'){                    
+        $cart_item_data['new_price'] = $price + 20;
+     }   
+return $cart_item_data;
+ 
+}
 
 ?>
 
@@ -281,3 +355,9 @@ https://rudrastyh.com/woocommerce/get-number-of-items-in-cart.html
 https://woocommerce.com/document/setting-up-taxes-in-woocommerce/
 https://woocommerce.com/document/woocommerce-shipping-and-tax/woocommerce-tax/ 
 https://rudrastyh.com/woocommerce
+
+// payment gateway Checkout 
+https://wordpress.org/plugins/mycryptocheckout/
+Zelle : https://wordpress.org/plugins/wc-zelle/
+crypto : https://wordpress.org/plugins/triplea-cryptocurrency-payment-gateway-for-woocommerce/
+cashapp : https://wordpress.org/plugins/wc-cashapp/ 
