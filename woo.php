@@ -1,3 +1,4 @@
+https://woocommerce.com/document/woocommerce-shortcodes/
 <?php 
 
 
@@ -342,6 +343,10 @@ https://wordpress.org/plugins/checkout-for-paypal/
 https://wordpress.org/plugins/wordpress-easy-paypal-payment-or-donation-accept-plugin/
 https://wordpress.org/plugins/wp-paypal/
 
+
+ Add to Cart URL
+ https://www.businessbloomer.com/woocommerce-custom-add-cart-urls-ultimate-guide/  
+ 
 Woo cart and checkout
 https://wordpress.org/plugins/woo-checkout-on-popup-free/
 https://wordpress.org/plugins/instantio/
@@ -361,3 +366,7 @@ https://wordpress.org/plugins/mycryptocheckout/
 Zelle : https://wordpress.org/plugins/wc-zelle/
 crypto : https://wordpress.org/plugins/triplea-cryptocurrency-payment-gateway-for-woocommerce/
 cashapp : https://wordpress.org/plugins/wc-cashapp/ 
+
+
+order:
+https://wordpress.org/plugins/order-import-export-for-woocommerce/
