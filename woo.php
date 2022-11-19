@@ -57,7 +57,46 @@ function bbloomer_recently_viewed_shortcode() {
    return $title . do_shortcode("[products ids='$product_ids']");
    
 }
-
+// =============================================================
+// Product list
+ $arg = array(
+          'post_type' => 'product',
+          'post_status' => 'publish',
+          'posts_per_page' => -1
+		);
+	 global $post;
+     $arr_post = get_posts($arg);
+     if ($arr_post) { 
+	    
+  
+           
+		 echo '<table id="prodTable">
+					<thead>
+						<tr>
+							<th>Product Id</th>											
+							<th>Product SKU</th>
+							<th>Product Name</th>
+							<th>Product Url</th>
+						</tr>
+					</thead><tbody>';
+		foreach ($arr_post as $post) {
+                setup_postdata($post);
+                $postID = get_the_ID(); 
+				$sku = get_post_meta( $postID, '_sku', true ); 
+				$name = get_the_title($postID );
+				$url = get_permalink( $postID );
+				echo '<tr>';
+					echo '<td>' . $postID . '</td>';
+					echo '<td>' . $sku . '</td>';
+					echo '<td>' . $name . '</td>';
+					echo '<td>' . $url . '</td>';
+				echo '</tr>';
+				
+		}
+		
+		echo '</tbody></table>';
+		
+	 }
 ==================================================================
 add_filter ( 'woocommerce_account_menu_items', 'misha_one_more_link' );
 function misha_one_more_link( $menu_links ){
@@ -321,6 +360,121 @@ return $cart_item_data;
  
 }
  
+//////////////////////////////////////////////////////
+// **** ADDING COLUMNS IN WOOCOMMERCE ADMIN ORDERS LIST 
+//***  https://stackoverflow.com/questions/36446617/add-columns-to-admin-orders-list-in-woocommerce 
+// ADDING 2 NEW COLUMNS WITH THEIR TITLES (keeping "Total" and "Actions" columns at the end)
+add_filter( 'manage_edit-shop_order_columns', 'custom_shop_order_column', 20 );
+function custom_shop_order_column($columns)
+{
+    $reordered_columns = array();
+
+    // Inserting columns to a specific location
+    foreach( $columns as $key => $column){
+        $reordered_columns[$key] = $column;
+        if( $key ==  'order_status' ){
+            // Inserting after "Status" column
+            $reordered_columns['my-column1'] = __( 'Title1','theme_domain');
+            $reordered_columns['my-column2'] = __( 'Title2','theme_domain');
+        }
+    }
+    return $reordered_columns;
+}
+
+// Adding custom fields meta data for each new column (example)
+add_action( 'manage_shop_order_posts_custom_column' , 'custom_orders_list_column_content', 20, 2 );
+function custom_orders_list_column_content( $column, $post_id )
+{
+    switch ( $column )
+    {
+        case 'my-column1' :
+            // Get custom post meta data
+            $my_var_one = get_post_meta( $post_id, '_the_meta_key1', true );
+            if(!empty($my_var_one))
+                echo $my_var_one;
+
+            // Testing (to be removed) - Empty value case
+            else
+                echo '<small>(<em>no value</em>)</small>';
+
+            break;
+
+        case 'my-column2' :
+            // Get custom post meta data
+            $my_var_two = get_post_meta( $post_id, '_the_meta_key2', true );
+            if(!empty($my_var_two))
+                echo $my_var_two;
+
+            // Testing (to be removed) - Empty value case
+            else
+                echo '<small>(<em>no value</em>)</small>';
+
+            break;
+    }
+}
+
+
+// ===========================================================
+
+/*export csv */
+function admin_post_list_add_export_button( $which ) {
+    global $typenow;
+  
+    if ( 'product' === $typenow && 'top' === $which ) {
+        ?>
+        <input type="submit" name="export_all_posts" class="button button-primary" value="<?php _e('Export All Posts'); ?>" />
+        <?php
+    }
+}
+ 
+add_action( 'manage_posts_extra_tablenav', 'admin_post_list_add_export_button', 20, 1 );
+function func_export_all_posts() {
+    if(isset($_GET['export_all_posts'])) {
+        $arg = array(
+            'post_type' => 'product',
+            'post_status' => 'publish',
+            'posts_per_page' => -1,
+			'meta_query' => array(
+				 array(
+				   'key' => '_thumbnail_id',
+				   'value' => '?',
+				   'compare' => 'NOT EXISTS'
+				 )
+			  ),			
+		    );
+			
+
+  
+        global $post;
+        $arr_post = get_posts($arg);
+        if ($arr_post) {
+  
+            header('Content-type: text/csv');
+            header('Content-Disposition: attachment; filename="mjt_fatima.csv"');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+  
+            $file = fopen('php://output', 'w');
+  
+             fputcsv($file, array('ID', 'SKU', 'Post Title', 'URL'));
+  
+            foreach ($arr_post as $post) {
+                setup_postdata($post);
+                $postID = get_the_ID();
+				$sku = get_post_meta( $postID, '_sku', true ); 
+				$name = get_the_title($postID );
+				$url = get_permalink( $postID );               
+                
+				fputcsv($file, array($postID, $sku, $name, $url));
+            }  
+            exit();
+		}
+    }
+}
+ 
+add_action( 'init', 'func_export_all_posts' );
+
+/*end of export csv */
 ?>
 
 ===================================================================
@@ -369,4 +523,14 @@ cashapp : https://wordpress.org/plugins/wc-cashapp/
 
 
 order:
+https://wordpress.org/plugins/woo-order-export-lite/ ** useful 
 https://wordpress.org/plugins/order-import-export-for-woocommerce/
+https://www.tychesoftwares.com/woocommerce-checkout-page-hooks-visual-guide-with-code-snippets/
+https://www.businessbloomer.com/woocommerce-visual-hook-guide-checkout-page/
+
+order csv: 
+https://www.webtoffee.com/export-woocommerce-orders-csv-xml-file/
+https://www.webtoffee.com/wp-content/uploads/2021/04/Order_SampleCSV.csv
+
+https://stackoverflow.com/questions/47886025/add-custom-url-link-to-admin-order-list-page-in-woocommerce?noredirect=1&lq=1
+https://stackoverflow.com/questions/36446617/add-columns-to-admin-orders-list-in-woocommerce 
