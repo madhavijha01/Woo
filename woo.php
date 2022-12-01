@@ -475,8 +475,24 @@ function func_export_all_posts() {
 add_action( 'init', 'func_export_all_posts' );
 
 /*end of export csv */
-?>
 
+=============================================
+/// Redirect to Custom Thank you Page – WooCommerce
+add_action( 'woocommerce_thankyou', 'bbloomer_redirectcustom');
+  
+function bbloomer_redirectcustom( $order_id ){
+    $order = wc_get_order( $order_id );
+    $url = 'https://yoursite.com/custom-url';
+    if ( ! $order->has_status( 'failed' ) ) {
+        wp_safe_redirect( $url );
+        exit;
+    }
+} 
+//https://www.businessbloomer.com/resolved-woocommerce-redirect-custom-thank-page/
+?>
+https://woocommerce.com/document/woocommerce-theme-developer-handbook/
+https://woocommerce.com/documentation/woocommerce-codex/
+https://woocommerce.com/document/woocommerce-cookies/
 ===================================================================
 woocmerce : woocommerce woocomerce woo E-com
 https://stackoverflow.com/questions/24575035/woocommerce-create-load-more-products-with-ajax/24598744
@@ -499,7 +515,11 @@ https://wordpress.org/plugins/wp-paypal/
 
 
  Add to Cart URL
- https://www.businessbloomer.com/woocommerce-custom-add-cart-urls-ultimate-guide/  
+ https://www.businessbloomer.com/woocommerce-custom-add-cart-urls-ultimate-guide/ 
+https://www.businessbloomer.com/woocommerce-get-cart-info-total-items-etc-from-cart-object/ 
+
+Order Object
+https://www.businessbloomer.com/woocommerce-easily-get-order-info-total-items-etc-from-order-object/
  
 Woo cart and checkout
 https://wordpress.org/plugins/woo-checkout-on-popup-free/
