@@ -543,6 +543,8 @@ function mjt_sstripe_order_columns( $columns ) {
 	return $columns;
 }
 ?>
+https://www.cloudways.com/blog/custom-dashboard-using-woocommerce-php-rest-api/
+
 https://woocommerce.com/document/woocommerce-theme-developer-handbook/
 https://woocommerce.com/documentation/woocommerce-codex/
 https://woocommerce.com/document/woocommerce-cookies/
