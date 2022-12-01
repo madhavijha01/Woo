@@ -489,6 +489,59 @@ function bbloomer_redirectcustom( $order_id ){
     }
 } 
 //https://www.businessbloomer.com/resolved-woocommerce-redirect-custom-thank-page/
+
+//===========================================================
+
+// Add the custom columns to the sstripe_order post type:
+add_filter( 'manage_sstripe_order_posts_columns', 'mjt_set_custom_edit_sstripe_order_columns' );
+function mjt_set_custom_edit_sstripe_order_columns($columns) {
+    unset( $columns['author'] );
+    $columns['order_id'] = __( 'Order ID', 'pay_tirmizi' );
+    $columns['ordertotal'] = __( 'Order Total', 'pay_tirmizi' );
+	$columns['orderstatus'] = __( 'Order Status', 'pay_tirmizi' );
+	$columns['customer_id'] = __( 'Customer ID', 'pay_tirmizi' );
+    return $columns;
+}
+
+// Add the data to the custom columns for the book post type:
+add_action( 'manage_sstripe_order_posts_custom_column' , 'mjt_custom_sstripe_order_column', 10, 2 );
+function mjt_custom_sstripe_order_column( $column, $post_id ) {
+    switch ( $column ) {
+
+        case 'order_id' :
+            echo get_post_meta( $post_id , 'order_id' , true ); 
+            break;
+
+        case 'ordertotal' :
+            echo get_post_meta( $post_id , 'ordertotal' , true ); 
+            break;
+			
+		case 'orderstatus' :
+			$order_id = get_post_meta( $post_id , 'order_id' , true );
+			$orderstaus = 'orderstaus_'.$order_id ;
+            echo get_post_meta( $post_id , $orderstaus , true ); 
+            break;
+			
+		 case 'customer_id' :
+            echo get_post_meta( $post_id , 'customer_id' , true ); 
+            break;
+    }
+}
+
+
+add_filter( 'manage_sstripe_order_posts_columns', 'mjt_sstripe_order_columns' );
+function mjt_sstripe_order_columns( $columns ) {
+	$columns = array(
+      'cb' => $columns['cb'],      
+      'title' => __( 'Title' ),
+      'order_id' => __( 'Order ID', 'pay_tirmizi' ),
+      'ordertotal' => __( 'Order Total', 'pay_tirmizi' ),
+	  'orderstatus' => __( 'Order Status', 'pay_tirmizi' ),
+	  'customer_id' => __( 'Customer ID', 'pay_tirmizi' ),
+	  'date' => __( 'Date', 'pay_tirmizi' ),
+    );
+	return $columns;
+}
 ?>
 https://woocommerce.com/document/woocommerce-theme-developer-handbook/
 https://woocommerce.com/documentation/woocommerce-codex/
