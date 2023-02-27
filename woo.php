@@ -1,5 +1,20 @@
 https://woocommerce.com/document/woocommerce-shortcodes/
-<?php 
+<?php
+ 
+add_shortcode('review_scrolling_button', 'mjt_add_review_scrolling_button');
+function mjt_add_review_scrolling_button(){ 
+    $post_id = get_the_ID();
+    $comments = get_comments_number($post_id); 
+    $txtxt = ($comments > 0) ? 'Read all reviews' : 'Add review';
+    echo '<div class="woocommerce-product-rating">
+            <div class="star-rating star-rating--inline" role="img" aria-label="Rated 5.00 out of 5">
+                <span style="width:100%">Rated <strong class="rating">5.00</strong> out of 5 based on <span class="rating">1</span> customer rating
+                </span>
+            </div>
+            <a href="#reviews_list" class="woocommerce-review-link" rel="nofollow">'.$txtxt.'</a>
+        </div>';
+}
+
 
 
 // mini cart woocommerce_mini_cart
@@ -673,8 +688,64 @@ function bbloomer_order_with_product_images( $args ) {
    $args['show_image'] = true;
    return $args;
 }
+/*===========================================*/
+/**
+ * @snippet       Translate a String in WooCommerce
+ * @how-to        Watch tutorial @ https://businessbloomer.com/?p=19055
+ * @author        Rodolfo Melogli
+ * @compatible    WooCommerce 3.7
+ * @donate $9     https://businessbloomer.com/bloomer-armada/
+ */
 
-/*=== =========================================== */
+add_filter( 'gettext', 'bbloomer_translate_woocommerce_strings', 999, 3 );
+
+function bbloomer_translate_woocommerce_strings( $translated, $untranslated, $domain ) {
+	if ( ! is_admin() && 'woocommerce-admin' === $domain ) {
+		switch ( $translated) {
+			case 'Products' :
+				$translated = 'Camps';
+				break;
+			case 'Order Number' :
+				$translated = 'Group Number';
+				break;
+			case 'Product(s)' :
+				$translated = 'Camp(s)';
+				break;
+
+				 // ETC
+
+			}
+
+	 }
+
+	 return $translated;
+
+}
+/* ================================================*/
+// Return to shop text
+add_filter( 'gettext', 'change_woocommerce_return_to_shop_text', 20, 3 );
+function change_woocommerce_return_to_shop_text( $translated_text, $text, $domain ) {
+       switch ( $translated_text ) {
+                      case 'Return to shop' :
+   $translated_text = __( 'Return to Registration Page.', 'woocommerce' );
+   break;
+  }
+ return $translated_text; 
+
+}
+/* ================================================*/
+// Continue shopping rename
+add_filter( 'wc_add_to_cart_message_html', 'my_changed_wc_add_to_cart_message_html', 10, 2 );
+function my_changed_wc_add_to_cart_message_html($message, $products){
+
+    if (strpos($message, 'Continue shopping') !== false) {
+        $message = str_replace("Continue shopping", "Add Another Camp", $message);
+    }
+
+    return $message;
+
+}
+/*============================================== */
 //https://www.businessbloomer.com/woocommerce-get-single-variations/
 
 /**
@@ -718,6 +789,48 @@ function bbloomer_single_variations_shortcode() {
    }
    return;
 }
+
+//////////////////////////////////////////////////////
+// Order meta keys : tirmizi.net 
+
+_order_key : wc_order_lGlgVtanLMfIu
+_customer_user : 0
+_payment_method : other_payment
+_payment_method_title : Stripe Payment On Subdoamin
+_customer_ip_address : 103.166.12.202
+_customer_user_agent : Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36
+_created_via : checkout
+_cart_hash : 594a008063591f55703687d935fc878e
+_download_permissions_granted : no
+_recorded_sales : no
+_recorded_coupon_usage_counts : no
+_new_order_email_sent : false
+_order_stock_reduced : no
+_billing_first_name : wpDev
+_billing_last_name : Jha
+_billing_address_1 : 6666, Ajrto
+_billing_address_2 : new road
+_billing_city : AJPMN
+_billing_state : RJ
+_billing_postcode : 302022
+_billing_country : IN
+_billing_email : wpdeveloper81@tirmizi.net
+_billing_phone : 9213264579
+_order_currency : USD
+_cart_discount : 0
+_cart_discount_tax : 0
+_order_shipping : 0
+_order_shipping_tax : 0
+_order_tax : 0
+_order_total : 100.00
+_order_version : 7.1.1
+_prices_include_tax : no
+_billing_address_index : wpDev Jha 6666, Ajrto new road AJPMN RJ 302022 IN wpdeveloper81@tirmizi.net 9213264579
+_shipping_address_index :
+is_vat_exempt : no
+_alg_wc_custom_order_number : 10480
+_alg_wc_full_custom_order_number : 10480
+_edit_lock : 1670824483:1
 /*============================================== */
 
 // https://www.businessbloomer.com/woocommerce-split-variable-products-into-simple/
@@ -817,3 +930,6 @@ Variation swatches:
 https://wordpress.org/plugins/wpc-variations-radio-buttons/
 
 https://wordpress.org/plugins/wpc-show-single-variations/
+WooCommerce Custom Payment Gateway
+Custom Order Numbers for WooCommerce
+BTCPay For Woocommerce V2
