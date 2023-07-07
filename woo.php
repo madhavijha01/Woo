@@ -790,8 +790,89 @@ function bbloomer_single_variations_shortcode() {
    return;
 }
 
+
+//==============================================================
+// https://www.businessbloomer.com/woocommerce-third-description-single-product-page/?mtke=174
+
+
+/**
+ * @snippet       Third Description @ Single Product
+ * @how-to        Get CustomizeWoo.com FREE
+ * @author        Rodolfo Melogli
+ * @compatible    WooCommerce 7
+ * @donate $9     https://businessbloomer.com/bloomer-armada/
+ */
+ 
+add_action( 'add_meta_boxes', 'bbloomer_new_meta_box_single_prod' );
+ 
+function bbloomer_new_meta_box_single_prod() {
+   add_meta_box(
+      'custom_product_meta_box',
+      'Product third description',
+      'bbloomer_add_custom_content_meta_box',
+      'product',
+      'normal',
+      'default'
+   );
+}
+ 
+function bbloomer_add_custom_content_meta_box( $post ){
+   $third_desc = get_post_meta( $post->ID, '_third_desc', true ) ? get_post_meta( $post->ID, '_third_desc', true ) : '';   
+   wp_editor( $third_desc, '_third_desc' );
+}
+ 
+add_action( 'save_post_product', 'bbloomer_save_custom_content_meta_box', 10, 1 );
+ 
+function bbloomer_save_custom_content_meta_box( $post_id ) {
+   if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+   if ( ! isset( $_POST['_third_desc'] ) ) return;
+   update_post_meta( $post_id, '_third_desc', $_POST['_third_desc'] );
+}
+ 
+add_action( 'woocommerce_after_single_product_summary' , 'bbloomer_third_desc_bottom_single_product', 99 );
+   
+function bbloomer_third_desc_bottom_single_product() {
+   global $product;
+   $third_desc = get_post_meta( $product->get_id(), '_third_desc', true ) ? get_post_meta( $product->get_id(), '_third_desc', true ) : '';
+   if ( ! $third_desc ) return;
+   echo '<div>';
+   echo $third_desc;
+   echo '</div>';
+}
+
+/** ==============================
+ * @snippet       Add Another Add to Cart Form @ Single Product
+ * @how-to        Get CustomizeWoo.com FREE
+ * @author        Rodolfo Melogli
+ * @compatible    WooCommerce 7
+ * @donate $9     https://businessbloomer.com/bloomer-armada/
+ */
+ 
+add_action( 'woocommerce_after_single_product_summary', 'woocommerce_template_single_add_to_cart', 9999 );
+
+//====================================================================================
 //////////////////////////////////////////////////////
 // Order meta keys : tirmizi.net 
+
+https://www.businessbloomer.com/woocommerce-easily-get-order-info-total-items-etc-from-order-object/
+
+// Get an instance of the WC_Order object (same as before)
+$order = wc_get_order( $order_id );
+
+$order_id  = $order->get_id(); // Get the order ID
+$parent_id = $order->get_parent_id(); // Get the parent order ID (for subscriptions…)
+
+$user_id   = $order->get_user_id(); // Get the costumer ID
+$user      = $order->get_user(); // Get the WP_User object
+
+$order_status  = $order->get_status(); // Get the order status (see the conditional method has_status() below)
+$currency      = $order->get_currency(); // Get the currency used  
+$payment_method = $order->get_payment_method(); // Get the payment method ID
+$payment_title = $order->get_payment_method_title(); // Get the payment method title
+$date_created  = $order->get_date_created(); // Get date created (WC_DateTime object)
+$date_modified = $order->get_date_modified(); // Get date modified (WC_DateTime object)
+
+$billing_country = $order->get_billing_country()
 
 _order_key : wc_order_lGlgVtanLMfIu
 _customer_user : 0
@@ -834,6 +915,7 @@ _edit_lock : 1670824483:1
 /*============================================== */
 
 // https://www.businessbloomer.com/woocommerce-split-variable-products-into-simple/
+https://www.businessbloomer.com/blog/
 
 
 ?>
