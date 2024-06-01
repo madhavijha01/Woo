@@ -1,4 +1,8 @@
 https://woocommerce.com/document/woocommerce-shortcodes/
+[sale_products], [best_selling_products], [recent_products limit="4"], [product_attribute], and [top_rated_products="4"
+[woocommerce_cart]
+
+https://www.businessbloomer.com/woocommerce-add-custom-field-product-variation/
 <?php
  
 add_shortcode('review_scrolling_button', 'mjt_add_review_scrolling_button');
@@ -112,6 +116,14 @@ function bbloomer_recently_viewed_shortcode() {
 		echo '</tbody></table>';
 		
 	 }
+=================================================================
+global $post;
+		 $product_id = $post->ID;
+		$product = wc_get_product($product_id);
+		$current_products = $product->get_children();
+		if( count( $current_products ) !== 0 ) { 
+		
+		}
 ==================================================================
 add_filter ( 'woocommerce_account_menu_items', 'misha_one_more_link' );
 function misha_one_more_link( $menu_links ){
@@ -237,7 +249,13 @@ function nfc_user_order_listing_detail(){
 		echo $output; 
 	}
 } 
-
+==================================================
+// add custom text with price 
+add_filter( 'woocommerce_get_price_html', 'mjt_custom_price_message' );
+function mjt_custom_price_message( $price ) {
+	$vat = ' <span class="mjt_cust_txt">m<sup>2</sup>(incl. VAT)</span>';
+	return $price . $vat;
+} 
 ==============================================================
 Set product sale price programmatically in WooCommerce 3
 https://stackoverflow.com/questions/48763989/set-product-sale-price-programmatically-in-woocommerce-3
@@ -374,7 +392,22 @@ function add_cart_item_data( $cart_item_data, $product_id, $variation_id ) {
 return $cart_item_data;
  
 }
- 
+ //----------------------------------------------------------------
+ // Deeptech processing fee:
+ add_action('woocommerce_cart_calculate_fees' , 'dtm_add_processing_fees');
+function dtm_add_processing_fees( WC_Cart $cart ){
+    $fees = 0;
+
+    foreach( $cart->get_cart() as $item ){ /* echo '<pre>'; print_r($item); echo '</pre>'; */
+		$fee = $item[ 'line_subtotal' ]   * 3.55/100 ;
+       $fees += $fee; 
+    }
+
+    if( $fees != 0 ){
+        $cart->add_fee( 'Processing fee', $fees);
+    }
+}
+//----------------------------------------------------------------
 //////////////////////////////////////////////////////
 // **** ADDING COLUMNS IN WOOCOMMERCE ADMIN ORDERS LIST 
 //***  https://stackoverflow.com/questions/36446617/add-columns-to-admin-orders-list-in-woocommerce 
@@ -840,6 +873,33 @@ function bbloomer_third_desc_bottom_single_product() {
    echo '</div>';
 }
 
+
+// ===================================================== 
+ https:/ /gist.github.com/lukecav/05afef12feaf980c121da9afb9291ad5
+ // Get All orders IDs for a given product ID in WooCommerce
+				global $wpdb;
+				$product_id = 167808;
+				$order_status = array( 'wc-completed', 'wc-deposits', 'wc-half', 'wc-on-hold' ) ;
+				$results = $wpdb->get_col("
+						SELECT order_items.order_id
+						FROM {$wpdb->prefix}woocommerce_order_items as order_items
+						LEFT JOIN {$wpdb->prefix}woocommerce_order_itemmeta as order_item_meta ON order_items.order_item_id = order_item_meta.order_item_id
+						LEFT JOIN {$wpdb->posts} AS posts ON order_items.order_id = posts.ID
+						WHERE posts.post_type = 'shop_order'
+						AND posts.post_status IN ( '" . implode( "','", $order_status ) . "' )
+						AND order_items.order_item_type = 'line_item'
+						AND order_item_meta.meta_key = '_product_id'
+						AND order_item_meta.meta_value = '$product_id'
+					");
+					if (count($results) === 0) {
+						
+					}else{ 
+					$cnt = sizeof($results);
+					for($r=0;$r<$cnt;$r++){
+						echo '<p>' .get_post_meta($results[$r],'_billing_company',true) . '</p>';
+						$selectbox_options.= '<option value="'.get_post_meta($results[$r],'_billing_company',true).'">'.get_post_meta($results[$r],'_billing_company',true).'</option>';
+					}
+					}
 /** ==============================
  * @snippet       Add Another Add to Cart Form @ Single Product
  * @how-to        Get CustomizeWoo.com FREE
@@ -850,7 +910,266 @@ function bbloomer_third_desc_bottom_single_product() {
  
 add_action( 'woocommerce_after_single_product_summary', 'woocommerce_template_single_add_to_cart', 9999 );
 
-//====================================================================================
+//==========================================
+// WooCommerce Checkout Fields Hook
+add_filter( 'woocommerce_checkout_fields' , 'custom_wc_checkout_fields' );
+
+// Change order comments placeholder and label, and set billing phone number to not required.
+function custom_wc_checkout_fields( $fields ) {
+$fields['order']['order_comments']['placeholder'] = 'Enter your placeholder text here.';
+$fields['order']['order_comments']['label'] = 'Enter your label here.';
+$fields['billing']['billing_phone']['required'] = false;
+return $fields;
+}
+
+/**
+ * @snippet       [recently_viewed_products] Shortcode - WooCommerce
+ * @how-to        Get CustomizeWoo.com FREE
+ * @author        Rodolfo Melogli
+ * @compatible    WooCommerce 8
+ * @donate $9     https://businessbloomer.com/bloomer-armada/
+ */
+ 
+add_action( 'template_redirect', 'mjtff_track_product_view', 9999 );
+ 
+function mjtff_track_product_view() {
+   if ( ! is_singular( 'product' ) ) return;
+   global $post;
+   if ( empty( $_COOKIE['mjtff_recently_viewed'] ) ) {
+      $viewed_products = array();
+   } else {
+      $viewed_products = wp_parse_id_list( (array) explode( '|', wp_unslash( $_COOKIE['mjtff_recently_viewed'] ) ) );
+   }
+   $keys = array_flip( $viewed_products );
+   if ( isset( $keys[ $post->ID ] ) ) {
+      unset( $viewed_products[ $keys[ $post->ID ] ] );
+   }
+   $viewed_products[] = $post->ID;
+   if ( count( $viewed_products ) > 15 ) {
+      array_shift( $viewed_products );
+   }
+   wc_setcookie( 'mjtff_recently_viewed', implode( '|', $viewed_products ) );
+}
+ 
+add_shortcode( 'recently_viewed_products', 'mjtff_recently_viewed_shortcode' );
+  
+function mjtff_recently_viewed_shortcode() {
+   $viewed_products = ! empty( $_COOKIE['mjtff_recently_viewed'] ) ? (array) explode( '|', wp_unslash( $_COOKIE['mjtff_recently_viewed'] ) ) : array();
+   $viewed_products = array_reverse( array_filter( array_map( 'absint', $viewed_products ) ) );
+   if ( empty( $viewed_products ) ) return;
+   $title = '<h3>Recently Viewed Products</h3>';
+   $product_ids = implode( ",", $viewed_products );
+   return $title . do_shortcode("[products ids='$product_ids']");
+}
+
+//==========================================
+/**
+ * @snippet       Rename Related Products Heading @ WooCommerce Single Product
+ * @how-to        Get CustomizeWoo.com FREE
+ * @author        Rodolfo Melogli
+ * @compatible    WooCommerce 7
+ * @donate $9     https://businessbloomer.com/bloomer-armada/
+ */
+ 
+add_filter( 'woocommerce_product_related_products_heading', 'mjtff_rename_related_products' );
+ 
+function mjtff_rename_related_products() {
+   return "Customers also viewed";
+}
+
+//==============================================
+/**
+ * @snippet       Plus Minus Buttons @ WooCommerce Add Cart Quantity
+ * @how-to        Get CustomizeWoo.com FREE
+ * @author        Rodolfo Melogli
+ * @compatible    WooCommerce 7
+ * @donate $9     https://businessbloomer.com/bloomer-armada/
+ */
+  
+// -------------
+// 1. Show plus minus buttons
+  
+add_action( 'woocommerce_after_quantity_input_field', 'mjtff_display_quantity_plus' );
+  
+function mjtff_display_quantity_plus() {
+   echo '<button type="button" class="plus">+</button>';
+}
+  
+add_action( 'woocommerce_before_quantity_input_field', 'mjtff_display_quantity_minus' );
+  
+function mjtff_display_quantity_minus() {
+   echo '<button type="button" class="minus">-</button>';
+}
+  
+// -------------
+// 2. Trigger update quantity script
+  
+add_action( 'wp_footer', 'mjtff_add_cart_quantity_plus_minus' );
+  
+function mjtff_add_cart_quantity_plus_minus() {
+ 
+   if ( ! is_product() && ! is_cart() ) return;
+    
+   wc_enqueue_js( "   
+           
+      $(document).on( 'click', 'button.plus, button.minus', function() {
+  
+         var qty = $( this ).parent( '.quantity' ).find( '.qty' );
+         var val = parseFloat(qty.val());
+         var max = parseFloat(qty.attr( 'max' ));
+         var min = parseFloat(qty.attr( 'min' ));
+         var step = parseFloat(qty.attr( 'step' ));
+ 
+         if ( $( this ).is( '.plus' ) ) {
+            if ( max && ( max <= val ) ) {
+               qty.val( max ).change();
+            } else {
+               qty.val( val + step ).change();
+            }
+         } else {
+            if ( min && ( min >= val ) ) {
+               qty.val( min ).change();
+            } else if ( val > 1 ) {
+               qty.val( val - step ).change();
+            }
+         }
+ 
+      });
+        
+   " );
+} 
+//==============
+add_filter( 'woocommerce_order_button_text', 'woo_custom_order_button_text' ); 
+
+function woo_custom_order_button_text() {
+    return __( 'Complete Purchase', 'woocommerce' ); 
+}
+
+//==============
+Stock 
+// https://www.templatemonster.com/help/woocommerce-how-to-change-in-stock-out-of-stock-text-displayed-on-a-product-page.html
+add_filter( 'woocommerce_get_availability', 'wcs_custom_get_availability', 1, 2);
+function wcs_custom_get_availability( $availability, $_product ) {
+    
+    // Change In Stock Text
+    if ( $_product->is_in_stock() ) {
+        $availability['availability'] = __('Available!', 'woocommerce');
+    }
+    // Change Out of Stock Text
+    if ( ! $_product->is_in_stock() ) {
+        $availability['availability'] = __('Sold Out', 'woocommerce');
+    }
+    return $availability;
+}
+//======================================================
+<div class="variation_img woocommerce-product-gallery__image"><img src="https://wp-dev-studio.com/103/wp-content/uploads/2024/04/SG-26008RD-BI-02-768x512-1.jpg"></div>
+
+    $available_variation = array(
+                    'attributes'           => $variation->get_variation_attributes(),
+                    'image_id'             => $variation->get_image_id(),
+                    'is_in_stock'          => $variation->is_in_stock(),
+                    'is_purchasable'       => $variation->is_purchasable(),
+                    'variation_id'         => $variation->get_id(),
+                    'variation_image_id'   => $variation->get_image_id(),
+                    'product_id'           => $product->get_id(),
+                    'availability_html'    => wc_get_stock_html( $variation ),
+                    'price_html'           => '<span class="price">' . $variation->get_price_html() . '</span>',
+                    'variation_is_active'  => $variation->variation_is_active(),
+                    'variation_is_visible' => $variation->variation_is_visible(),
+					
+// ==================================================
+// product details/ 
+// https://www.businessbloomer.com/woocommerce-easily-get-product-info-title-sku-desc-product-object/ 
+// Get Product ID
+  
+$product->get_id();
+  
+// Get Product General Info
+  
+$product->get_type();
+$product->get_name();
+$product->get_slug();
+$product->get_date_created();
+$product->get_date_modified();
+$product->get_status();
+$product->get_featured();
+$product->get_catalog_visibility();
+$product->get_description();
+$product->get_short_description();
+$product->get_sku();
+$product->get_menu_order();
+$product->get_virtual();
+get_permalink( $product->get_id() );
+  
+// Get Product Prices
+  
+$product->get_price();
+$product->get_regular_price();
+$product->get_sale_price();
+$product->get_date_on_sale_from();
+$product->get_date_on_sale_to();
+$product->get_total_sales();
+  
+// Get Product Tax, Shipping & Stock
+  
+$product->get_tax_status();
+$product->get_tax_class();
+$product->get_manage_stock();
+$product->get_stock_quantity();
+$product->get_stock_status();
+$product->get_backorders();
+$product->get_sold_individually();
+$product->get_purchase_note();
+$product->get_shipping_class_id();
+  
+// Get Product Dimensions
+  
+$product->get_weight();
+$product->get_length();
+$product->get_width();
+$product->get_height();
+$product->get_dimensions();
+  
+// Get Linked Products
+  
+$product->get_upsell_ids();
+$product->get_cross_sell_ids();
+$product->get_parent_id();
+  
+// Get Product Variations and Attributes
+ 
+$product->get_children(); // get variations
+$product->get_attributes();
+$product->get_default_attributes();
+$product->get_attribute( 'attributeid' ); //get specific attribute value
+  
+// Get Product Taxonomies
+  
+wc_get_product_category_list( $product_id, $sep = ', ' );
+$product->get_category_ids();
+$product->get_tag_ids();
+  
+// Get Product Downloads
+  
+$product->get_downloads();
+$product->get_download_expiry();
+$product->get_downloadable();
+$product->get_download_limit();
+  
+// Get Product Images
+  
+$product->get_image_id();
+$product->get_image();
+$product->get_gallery_image_ids();
+  
+// Get Product Reviews
+  
+$product->get_reviews_allowed();
+$product->get_rating_counts();
+$product->get_average_rating();
+$product->get_review_count();
+
+///===========================================
 //////////////////////////////////////////////////////
 // Order meta keys : tirmizi.net 
 
@@ -914,7 +1233,9 @@ _alg_wc_full_custom_order_number : 10480
 _edit_lock : 1670824483:1
 /*============================================== */
 
-// https://www.businessbloomer.com/woocommerce-split-variable-products-into-simple/
+https://www.businessbloomer.com/woocommerce-add-new-row-order-totals-email-thank-page/
+
+https://www.businessbloomer.com/woocommerce-split-variable-products-into-simple/
 https://www.businessbloomer.com/blog/
 
 
@@ -976,7 +1297,7 @@ businessbloomer.com/woocommerce-get-single-variations/
 https://www.businessbloomer.com/woocommerce-split-variable-products-into-simple/
 
 
-
+https://www.businessbloomer.com/woocommerce-get-cart-info-total-items-etc-from-cart-object/
 
 // payment gateway Checkout 
 https://wordpress.org/plugins/mycryptocheckout/
@@ -984,8 +1305,9 @@ Zelle : https://wordpress.org/plugins/wc-zelle/
 crypto : https://wordpress.org/plugins/triplea-cryptocurrency-payment-gateway-for-woocommerce/
 cashapp : https://wordpress.org/plugins/wc-cashapp/ 
 
-
+https://www.businessbloomer.com/woocommerce-get-order-fees-total/
 order:
+https://www.businessbloomer.com/woocommerce-easily-get-order-info-total-items-etc-from-order-object/
 https://wordpress.org/plugins/woo-order-export-lite/ ** useful 
 https://wordpress.org/plugins/order-import-export-for-woocommerce/
 https://www.tychesoftwares.com/woocommerce-checkout-page-hooks-visual-guide-with-code-snippets/
@@ -1015,3 +1337,63 @@ https://wordpress.org/plugins/wpc-show-single-variations/
 WooCommerce Custom Payment Gateway
 Custom Order Numbers for WooCommerce
 BTCPay For Woocommerce V2
+
+
+https://www.tychesoftwares.com/how-to-add-custom-sections-fields-in-woocommerce-settings/
+https://webkul.com/blog/how-to-add-custom-tab-in-woocommerce-settings/
+https://rudrastyh.com/woocommerce/settings-pages.html
+
+https://wordpress.org/plugins/yayextra/
+
+==========================================
+WP Engine*
+InMotion Hosting
+A2 Hosting
+GoDaddy*
+Kinsta*
+Hostinger*
+Bluehost*
+SiteGround*
+DreamHost
+HostGator*
+namecheap*
+
+=================================================
+Checkout checkbox css:
+
+.woocommerce-shipping-fields .woocommerce-form__label, 
+.woocommerce-terms-and-conditions-wrapper p .woocommerce-form__label{
+	position: relative; 
+}
+.woocommerce-shipping-fields .woocommerce-form__label .input-checkbox,
+.woocommerce-terms-and-conditions-wrapper p .woocommerce-form__label .input-checkbox{
+	/* position: absolute; height: 0; */
+    opacity: 0;
+    cursor: pointer;
+     
+}
+.woocommerce-shipping-fields .woocommerce-form__label span:before, 
+.woocommerce-shipping-fields .woocommerce-form__label span:after,
+.woocommerce-terms-and-conditions-wrapper p .woocommerce-form__label span:before, 
+.woocommerce-terms-and-conditions-wrapper p .woocommerce-form__label span:after{
+	content: "";
+    position: absolute;
+    top: 45%;
+    left: 0px;
+    transform: translateY(-50%);
+    display: block;
+    background-color: transparent;
+    box-sizing: content-box;
+    border: 1px solid #a1a1a1; 
+    height: 10px;
+    width: 10px;
+    border-radius: 50%; 
+	
+}  
+.woocommerce-shipping-fields .woocommerce-form__label input:checked + span:before, 
+.woocommerce-terms-and-conditions-wrapper p .woocommerce-form__label input:checked + span:before{
+	border: 1px solid #333;
+    background: url(https://www.velolarsson.com/wp-content/uploads/2024/04/dot.png) no-repeat;
+    background-position: center;
+    background-size: 15px; 
+}
