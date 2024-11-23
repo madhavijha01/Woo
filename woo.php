@@ -3,7 +3,24 @@ https://woocommerce.com/document/woocommerce-shortcodes/
 [woocommerce_cart]
 
 https://www.businessbloomer.com/woocommerce-add-custom-field-product-variation/
+
+https://www.phonepe.com/payment-gateway/woocommerce-india/#pricing
+https://wordpress.org/plugins/phonepe-payment-solutions/
 <?php
+// Price 
+add_filter( 'woocommerce_get_price_html', 'mjt_custom_price_message' );
+function mjt_custom_price_message( $price ) {
+	global $product;
+	if( has_term( array('Accessories'), 'product_cat', $product->get_id() ) ){
+		$vat = ' <span class="mjt_cust_txt"> (incl. VAT)</span>';
+	}else{
+		$vat = ' <span class="mjt_cust_txt">m<sup>2</sup>(incl. VAT)</span>';
+	}
+	return $price . $vat;
+} 
+// ===============================================================
+if( is_product_category() ){}
+
  
 add_shortcode('review_scrolling_button', 'mjt_add_review_scrolling_button');
 function mjt_add_review_scrolling_button(){ 
@@ -523,6 +540,61 @@ function func_export_all_posts() {
 add_action( 'init', 'func_export_all_posts' );
 
 /*end of export csv */
+==============================================
+ <?php 
+ https://www.businessbloomer.com/woocommerce-get-product-order-cross-sells/
+ // get cross sell 
+// Ensure WooCommerce functions are available
+if ( ! function_exists( 'wc_get_product' ) ) {
+    return;
+}
+
+// Get the current product
+global $product;
+
+// Get the cross-sell IDs
+$cross_sell_ids = $product->get_cross_sell_ids();
+
+if ( ! empty( $cross_sell_ids ) ) {
+    // Query the cross-sell products
+    $args = array(
+        'post_type'      => 'product',
+        'posts_per_page' => -1,
+        'post__in'       => $cross_sell_ids,
+        'orderby'        => 'post__in',
+    );
+
+    $cross_sells = new WP_Query( $args );
+
+    if ( $cross_sells->have_posts() ) {
+        echo '<div class="cross-sell-products">';
+
+        // Start the loop
+        while ( $cross_sells->have_posts() ) {
+            $cross_sells->the_post();
+
+            // Get the product object
+            $cross_sell_product = wc_get_product( get_the_ID() );
+
+            // Display the product (you can customize this part as needed)
+            ?>
+            <div class="cross-sell-product">
+                <a href="<?php the_permalink(); ?>">
+                    <?php the_post_thumbnail( 'woocommerce_thumbnail' ); ?>
+                    <h2><?php the_title(); ?></h2>
+                    <span class="price"><?php echo $cross_sell_product->get_price_html(); ?></span>
+                </a>
+            </div>
+            <?php
+        }
+
+        echo '</div>';
+    }
+
+    // Restore original post data
+    wp_reset_postdata();
+}
+?>
 
 =============================================
 /// Redirect to Custom Thank you Page – WooCommerce
@@ -1061,7 +1133,172 @@ function wcs_custom_get_availability( $availability, $_product ) {
     }
     return $availability;
 }
+//======================================
+//To automatically add a specific product to the WooCommerce cart when a product from a specific category is added
+
+function add_product_to_cart_based_on_category() {
+    // Set the category ID and product ID
+    $specific_category_id = 123; // Replace with your category ID
+    $product_to_add_id = 456; // Replace with your product ID
+
+    // Check if the product is already in the cart
+    $product_already_in_cart = false;
+    foreach ( WC()->cart->get_cart() as $cart_item ) {
+        if ( $cart_item['product_id'] == $product_to_add_id ) {
+            $product_already_in_cart = true;
+            break;
+        }
+    }
+
+    // If the product is not already in the cart
+    if ( ! $product_already_in_cart ) {
+        // Check if any product from the specific category is in the cart
+        $category_product_in_cart = false;
+        foreach ( WC()->cart->get_cart() as $cart_item ) {
+            $product_id = $cart_item['product_id'];
+            if ( has_term( $specific_category_id, 'product_cat', $product_id ) ) {
+                $category_product_in_cart = true;
+                break;
+            }
+        }
+
+        // If a product from the specific category is in the cart, add the product automatically
+        if ( $category_product_in_cart ) {
+            WC()->cart->add_to_cart( $product_to_add_id );
+        }
+    }
+}
+add_action( 'woocommerce_before_calculate_totals', 'add_product_to_cart_based_on_category' );
+
 //======================================================
+/**
+ * @snippet       Check if Product ID is in the Cart (Alternative) - WooCommerce
+ * @how-to        Get CustomizeWoo.com FREE
+ * @author        Rodolfo Melogli
+ * @testedwith    WooCommerce 3.9
+ * @community     https://businessbloomer.com/club/
+ */
+   
+add_action( 'woocommerce_before_cart', 'bbloomer_find_product_in_cart_alt' );
+    
+function bbloomer_find_product_in_cart_alt() {
+  
+   $product_id = 282;
+   $in_cart = false;
+  
+   foreach( WC()->cart->get_cart() as $cart_item ) {
+      $product_in_cart = $cart_item['product_id'];
+      if ( $product_in_cart === $product_id ) $in_cart = true;
+   }
+  
+   if ( $in_cart ) {
+  
+      $notice = 'Product ID ' . $product_id . ' is in the Cart!';
+      wc_print_notice( $notice, 'notice' );
+  
+   }
+  
+}
+//===================================================================
+// https://stackoverflow.com/questions/42570982/adding-multiple-items-to-woocommerce-cart-at-once?rq=3
+//  example: http://shop.com/shop/cart/?add-to-cart=3001,3282 
+function woocommerce_maybe_add_multiple_products_to_cart() {
+// Make sure WC is installed, and add-to-cart qauery arg exists, and contains at least one comma.
+if ( ! class_exists( 'WC_Form_Handler' ) || empty( $_REQUEST['add-to-cart'] ) || false === strpos( $_REQUEST['add-to-cart'], ',' ) ) {
+    return;
+}
+
+// Remove WooCommerce's hook, as it's useless (doesn't handle multiple products).
+remove_action( 'wp_loaded', array( 'WC_Form_Handler', 'add_to_cart_action' ), 20 );
+
+$product_ids = explode( ',', $_REQUEST['add-to-cart'] );
+$count       = count( $product_ids );
+$number      = 0;
+
+foreach ( $product_ids as $product_id ) {
+    if ( ++$number === $count ) {
+        // Ok, final item, let's send it back to woocommerce's add_to_cart_action method for handling.
+        $_REQUEST['add-to-cart'] = $product_id;
+
+        return WC_Form_Handler::add_to_cart_action();
+    }
+
+    $product_id        = apply_filters( 'woocommerce_add_to_cart_product_id', absint( $product_id ) );
+    $was_added_to_cart = false;
+    $adding_to_cart    = wc_get_product( $product_id );
+
+    if ( ! $adding_to_cart ) {
+        continue;
+    }
+
+    $add_to_cart_handler = apply_filters( 'woocommerce_add_to_cart_handler', $adding_to_cart->product_type, $adding_to_cart );
+
+    /*
+     * Sorry.. if you want non-simple products, you're on your own.
+     *
+     * Related: WooCommerce has set the following methods as private:
+     * WC_Form_Handler::add_to_cart_handler_variable(),
+     * WC_Form_Handler::add_to_cart_handler_grouped(),
+     * WC_Form_Handler::add_to_cart_handler_simple()
+     *
+     * Why you gotta be like that WooCommerce?
+     */
+    if ( 'simple' !== $add_to_cart_handler ) {
+        continue;
+    }
+
+    // For now, quantity applies to all products.. This could be changed easily enough, but I didn't need this feature.
+    $quantity          = empty( $_REQUEST['quantity'] ) ? 1 : wc_stock_amount( $_REQUEST['quantity'] );
+    $passed_validation = apply_filters( 'woocommerce_add_to_cart_validation', true, $product_id, $quantity );
+
+    if ( $passed_validation && false !== WC()->cart->add_to_cart( $product_id, $quantity ) ) {
+        wc_add_to_cart_message( array( $product_id => $quantity ), true );
+    }
+}
+}
+
+ // Fire before the WC_Form_Handler::add_to_cart_action callback.
+ add_action( 'wp_loaded',        'woocommerce_maybe_add_multiple_products_to_cart', 15 );
+ 
+//====================================================
+// https://stackoverflow.com/questions/56321990/auto-add-a-product-for-cart-item-from-specific-product-categories-in-woocommerce?rq=3
+
+add_action( 'woocommerce_before_calculate_totals', 'auto_add_item_based_on_product_category', 10, 1 );
+function auto_add_item_based_on_product_category( $cart ) {
+    if ( is_admin() && ! defined( 'DOING_AJAX' ) )
+        return;
+
+    if ( did_action( 'woocommerce_before_calculate_totals' ) >= 2 )
+        return;
+
+    $required_categories = array('t-shirts'); // Required product category(ies)
+    $added_product_id = 1267; // Specific product to be added automatically
+    $matched_category = false;
+
+    // Loop through cart items
+    foreach ( $cart->get_cart() as $item_key => $item ) {
+        // Check for product category
+        if( has_term( $required_categories, 'product_cat', $item['product_id'] ) ) {
+            $matched_category = true;
+        }
+        // Check if specific product is already auto added
+        if( $item['data']->get_id() == $added_product_id ) {
+            $saved_item_key = $item_key; // keep cart item key
+        }
+    }
+
+    // If specific product is already auto added but without items from product category
+    if ( isset($saved_item_key) && ! $matched_category ) {
+        $cart->remove_cart_item( $saved_item_key ); // Remove specific product
+    }
+    // If there is an item from defined product category and specific product is not in cart
+    elseif ( ! isset($saved_item_key) && $matched_category ) {
+        $cart->add_to_cart( $added_product_id ); // Add specific product
+    }
+}
+
+
+//=============================================================
 <div class="variation_img woocommerce-product-gallery__image"><img src="https://wp-dev-studio.com/103/wp-content/uploads/2024/04/SG-26008RD-BI-02-768x512-1.jpg"></div>
 
     $available_variation = array(
@@ -1319,6 +1556,7 @@ https://wordpress.org/plugins/purchased-items-column-woocommerce/
 order csv: 
 https://www.webtoffee.com/export-woocommerce-orders-csv-xml-file/
 https://www.webtoffee.com/wp-content/uploads/2021/04/Order_SampleCSV.csv
+https://rudrastyh.com/woocommerce/order-items.html#order_items_add
 
 https://stackoverflow.com/questions/47886025/add-custom-url-link-to-admin-order-list-page-in-woocommerce?noredirect=1&lq=1
 https://stackoverflow.com/questions/36446617/add-columns-to-admin-orders-list-in-woocommerce 
@@ -1397,3 +1635,6 @@ Checkout checkbox css:
     background-position: center;
     background-size: 15px; 
 }
+
+
+https://wordpress.org/plugins/sg-checkout-location-picker/
