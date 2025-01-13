@@ -187,6 +187,47 @@ add_filter ( 'woocommerce_account_menu_items', 'nfc_reorder_my_account_menu' );
 
 https://isotropic.co/reorder-woocommerce-account-tabs/
 https://codex.wordpress.org/Plugin_API/Action_Reference
+
+
+==============================================================
+// https://www.cloudways.com/blog/add-custom-product-fields-woocommerce/
+add_action( 'woocommerce_product_options_general_product_data', 'mjt_weight_lable_option_group' );
+ 
+function mjt_weight_lable_option_group() {
+	echo '<div class="options_group">';
+	$weightlable = get_post_meta( get_the_ID(), 'weight_lable_option', true );
+	woocommerce_wp_text_input(
+		array(
+			'id'      => 'weight_lable',
+			'value'   => $weightlable,
+			'label'   => 'Add Weight',
+			'placeholder'   => '1kg / 100g...',			
+			'description' => 'it will appear with price',
+		)
+	);
+	echo '</div>';
+}
+
+add_action( 'woocommerce_process_product_meta', 'mjt_save_field', 10,2 );
+function mjt_save_field( $post_id){	
+	update_post_meta( $post_id, 'weight_lable_option', $_POST['weight_lable'] );
+}
+
+function cw_change_product_html( $price_html, $product ) {
+	 $weight_lable = get_post_meta($product->id, 'weight_lable_option', true);
+	 $weight_lable_html = '<span class="weight_label">'.$weight_lable.'/ </span>';
+	 $price_html =  $weight_lable_html . $price_html;
+	 return $price_html;
+}
+add_filter( 'woocommerce_get_price_html', 'cw_change_product_html', 10, 2 );
+
+function sv_change_product_price_cart( $price, $cart_item, $cart_item_key ) {
+	 if ( 22 === $cart_item['product_id'] ) {
+	 $price = '$50.00 per Unit<br>(7-8 skewers per Unit)';
+	 }
+	 return $price;
+}
+add_filter( 'woocommerce_cart_item_price', 'sv_change_product_price_cart', 10, 3 );
 ===============================================================
 
 https://stackoverflow.com/questions/42223765/get-the-order-id-from-the-current-user-orders-in-woocommerce
@@ -266,6 +307,19 @@ function nfc_user_order_listing_detail(){
 		echo $output; 
 	}
 } 
+==============================================
+// Make Email field on WooCommerce checkout form optional
+add_filter( 'woocommerce_billing_fields', 'email_field_non_required', 9999, 2 );
+
+function email_field_non_required( $fields, $country ) {
+
+	// Billing email field. 
+	if( isset( $fields['billing_email'] ) ) {
+		$fields['billing_email']['required'] = false; 
+	}
+
+	return $fields;
+}
 ==================================================
 // add custom text with price 
 add_filter( 'woocommerce_get_price_html', 'mjt_custom_price_message' );
@@ -1295,6 +1349,34 @@ function auto_add_item_based_on_product_category( $cart ) {
     elseif ( ! isset($saved_item_key) && $matched_category ) {
         $cart->add_to_cart( $added_product_id ); // Add specific product
     }
+}
+//======================================================
+https://www.businessbloomer.com/woocommerce-disable-free-shipping-if-cart-has-shipping-class/
+// used in RGA 
+
+/**
+ * @snippet       Disable Free Shipping if Cart has Shipping Class
+ * @how-to        businessbloomer.com/woocommerce-customization
+ * @author        Rodolfo Melogli, Business Bloomer
+ * @testedwith    WooCommerce 8
+ * @community     https://businessbloomer.com/club/
+ */
+  
+add_filter( 'woocommerce_package_rates', 'bbloomer_hide_free_shipping_for_shipping_class', 9999, 2 );
+   
+function bbloomer_hide_free_shipping_for_shipping_class( $rates, $package ) {
+   $shipping_class_target = 15; // shipping class ID (see screenshot below)
+   $in_cart = false;
+   foreach ( WC()->cart->get_cart_contents() as $key => $values ) {
+      if ( $values[ 'data' ]->get_shipping_class_id() == $shipping_class_target ) {
+         $in_cart = true;
+         break;
+      } 
+   }
+   if ( $in_cart ) {
+      unset( $rates['free_shipping:8'] ); // shipping method ID (see screenshot below)
+   }
+   return $rates;
 }
 
 
